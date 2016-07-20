@@ -2,7 +2,7 @@ import krpc, time, math
 
 turn_start_altitude = 250
 turn_end_altitude = 45000
-target_altitude = 130000
+target_altitude = 100000
 
 conn = krpc.connect(name='Launch Science Station to Orbit')
 vessel = conn.space_center.active_vessel
