@@ -19,7 +19,7 @@ stage_2_resources = vessel.resources_in_decouple_stage(stage=2, cumulative=False
 stage_3_resources = vessel.resources_in_decouple_stage(stage=3, cumulative=False)
 stage_4_resources = vessel.resources_in_decouple_stage(stage=4, cumulative=False)
 stage_5_resources = vessel.resources_in_decouple_stage(stage=5, cumulative=False)
-srb_fuel = conn.add_stream(stage_4_resources.amount, 'SolidFuel')
+srb_fuel = conn.add_stream(stage_5_resources.amount, 'SolidFuel')
 launcher_fuel = conn.add_stream(stage_3_resources.amount, 'LiquidFuel')
 second_stage_fuel = conn.add_stream(stage_2_resources.amount, 'LiquidFuel')
 
@@ -56,7 +56,7 @@ while True:
     # Separate SRBs when finished
     if not srbs_separated:
         #print("srb fuel: %f" % srb_fuel())
-        if srb_fuel() < 25.1:
+        if srb_fuel() < .1:
             time.sleep(.5)
             vessel.control.activate_next_stage()
             srbs_separated = True
