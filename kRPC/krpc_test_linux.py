@@ -1,4 +1,5 @@
 import socket
+
 rpc_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 rpc_conn.connect(('192.168.0.2', 50000))
 # Send the 12 byte hello message
