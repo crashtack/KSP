@@ -1,10 +1,10 @@
-import krpc, time, math
+import krpc, time, math, sys
 
 turn_start_altitude = 250
 turn_end_altitude = 45000
 target_altitude = 100000
 
-conn = krpc.connect(name='Launch into orbit')
+conn = krpc.connect(name='Launch Science Station to Orbit')
 vessel = conn.space_center.active_vessel
 
 # Set up streams for telemetry
@@ -13,15 +13,25 @@ altitude = conn.add_stream(getattr, vessel.flight(), 'mean_altitude')
 apoapsis = conn.add_stream(getattr, vessel.orbit, 'apoapsis_altitude')
 periapsis = conn.add_stream(getattr, vessel.orbit, 'periapsis_altitude')
 eccentricity = conn.add_stream(getattr, vessel.orbit, 'eccentricity')
+
+
 stage_2_resources = vessel.resources_in_decouple_stage(stage=2, cumulative=False)
 stage_3_resources = vessel.resources_in_decouple_stage(stage=3, cumulative=False)
-srb_fuel = conn.add_stream(stage_3_resources.amount, 'SolidFuel')
-launcher_fuel = conn.add_stream(stage_2_resources.amount, 'LiquidFuel')
+stage_4_resources = vessel.resources_in_decouple_stage(stage=4, cumulative=False)
+stage_5_resources = vessel.resources_in_decouple_stage(stage=5, cumulative=False)
+srb_fuel = conn.add_stream(stage_4_resources.amount, 'SolidFuel')
+launcher_fuel = conn.add_stream(stage_3_resources.amount, 'LiquidFuel')
+second_stage_fuel = conn.add_stream(stage_2_resources.amount, 'LiquidFuel')
 
 # Pre-launch setup
 vessel.control.sas = False
 vessel.control.rcs = False
 vessel.control.throttle = 1
+
+def print_status():
+    message = ("altitude: %.2f apoapsis: %.2f " % (altitude(), apoapsis()))
+    sys.stdout.write("\r" + message)
+    sys.stdout.flush()
 
 # Countdown...
 print('3...'); time.sleep(1)
@@ -38,7 +48,9 @@ vessel.auto_pilot.target_pitch_and_heading(90, 90)
 srbs_separated = False
 turn_angle = 0
 while True:
-
+    time.sleep(.1)
+    print_status()
+    #print("altitude: %.2f" % altitude())
     # Gravity turn
     if altitude() > turn_start_altitude and altitude() < turn_end_altitude:
         frac = (altitude() - turn_start_altitude) / (turn_end_altitude - turn_start_altitude)
@@ -49,7 +61,9 @@ while True:
 
     # Separate SRBs when finished
     if not srbs_separated:
-        if srb_fuel() < 0.1:
+        #print("srb fuel: %f" % srb_fuel())
+        if srb_fuel() < .1:
+            time.sleep(.5)
             vessel.control.activate_next_stage()
             srbs_separated = True
             print('SRBs separated')
@@ -58,18 +72,44 @@ while True:
     if apoapsis() > target_altitude*0.9:
         print('Approaching target apoapsis')
         break
-
+"""
 # Disable engines when target apoapsis is reached
 vessel.control.throttle = 0.25
 while apoapsis() < target_altitude:
+    print_status()
     pass
 print('Target apoapsis reached')
+vessel.control.throttle = 0
+time.sleep(.5)
+vessel.control.activate_next_stage()
+vessel.control.throttle = 1
+time.sleep(1)
 vessel.control.throttle = 0
 
 # Wait until out of atmosphere
 print('Coasting out of atmosphere')
 while altitude() < 70500:
     pass
+"""
+vessel.control.throttle = 0
+print('Remaining launcher_fuel: %.2f' % launcher_fuel())
+time.sleep(.5)
+vessel.control.activate_next_stage()
+# Wait until out of atmosphere
+print('Coasting out of atmosphere')
+while altitude() < 70500:
+    print_status()
+    time.sleep(.1)
+    pass
+vessel.control.throttle = 1
+# Disable engines when target apoapsis is reached
+while apoapsis() < target_altitude:
+    print_status()
+    time.sleep(.1)
+    pass
+print('Target apoapsis reached')
+vessel.control.throttle = 0
+
 
 # Plan circularization burn (using vis-viva equation)
 print('Planning circularization burn')
@@ -106,14 +146,18 @@ conn.space_center.warp_to(burn_ut - lead_time)
 print('Ready to execute burn')
 time_to_apoapsis = conn.add_stream(getattr, vessel.orbit, 'time_to_apoapsis')
 while time_to_apoapsis() - (burn_time/2.) > 0:
+    print_status()
+    time.sleep(.1)
     pass
 print('Executing burn')
 vessel.control.throttle = 1
 time.sleep(burn_time - 0.1)
 print('Fine tuning')
-vessel.control.throttle = 0.05
+vessel.control.throttle = 0.25
 remaining_burn = conn.add_stream(node.remaining_burn_vector, node.reference_frame)
 while remaining_burn()[1] > 0:
+    print_status()
+    time.sleep(.1)
     pass
 vessel.control.throttle = 0
 node.remove()
