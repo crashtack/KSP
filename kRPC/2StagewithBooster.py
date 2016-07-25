@@ -1,8 +1,9 @@
 import krpc, time, math, sys
 
 turn_start_altitude = 250
-turn_end_altitude = 45000
+turn_end_altitude = 50000
 target_altitude = 120000
+main_engine_throttle = 1
 
 conn = krpc.connect(name='Launch Science Station to Orbit')
 vessel = conn.space_center.active_vessel
@@ -21,12 +22,12 @@ stage_4_resources = vessel.resources_in_decouple_stage(stage=4, cumulative=False
 stage_5_resources = vessel.resources_in_decouple_stage(stage=5, cumulative=False)
 srb_fuel = conn.add_stream(stage_4_resources.amount, 'SolidFuel')
 launcher_fuel = conn.add_stream(stage_3_resources.amount, 'LiquidFuel')
-second_stage_fuel = conn.add_stream(stage_1_resources.amount, 'LiquidFuel')
+second_stage_fuel = conn.add_stream(stage_2_resources.amount, 'LiquidFuel')
 
 # Pre-launch setup
 vessel.control.sas = False
 vessel.control.rcs = False
-vessel.control.throttle = 1
+vessel.control.throttle = main_engine_throttle
 
 def print_status():
     message = ("altitude: %.2f apoapsis: %.2f " % (altitude(), apoapsis()))
@@ -62,19 +63,39 @@ while True:
     # Separate SRBs when finished
     if not srbs_separated:
         #print("srb fuel: %f" % srb_fuel())
-        if srb_fuel() < .1:
+        if srb_fuel() < 58.5:
             time.sleep(.5)
             vessel.control.activate_next_stage()
             srbs_separated = True
             print('SRBs separated')
 
     # Decrease throttle when approaching target apoapsis
-    if apoapsis() > target_altitude*0.9:
+    if apoapsis() > target_altitude*0.78:
         print('Approaching target apoapsis')
         break
+"""
+# Disable engines when target apoapsis is reached
+vessel.control.throttle = 0.25
+while apoapsis() < target_altitude:
+    print_status()
+    pass
+print('Target apoapsis reached')
+vessel.control.throttle = 0
+time.sleep(.5)
+vessel.control.activate_next_stage()
+vessel.control.throttle = 1
+time.sleep(1)
+vessel.control.throttle = 0
 
+# Wait until out of atmosphere
+print('Coasting out of atmosphere')
+while altitude() < 70500:
+    pass
+"""
 vessel.control.throttle = 0
 print('Remaining launcher_fuel: %.2f' % launcher_fuel())
+time.sleep(.5)
+vessel.control.activate_next_stage()
 # Wait until out of atmosphere
 print('Coasting out of atmosphere')
 while altitude() < 70500:
@@ -103,7 +124,8 @@ delta_v = v2 - v1
 node = vessel.control.add_node(ut() + vessel.orbit.time_to_apoapsis, prograde=delta_v)
 
 # Calculate burn time (using rocket equation)
-F = vessel.available_thrust
+# F = vessel.available_thrust
+F = vessel.max_vacuum_thrust
 Isp = vessel.specific_impulse * 9.82
 m0 = vessel.mass
 m1 = m0 / math.exp(delta_v/Isp)
