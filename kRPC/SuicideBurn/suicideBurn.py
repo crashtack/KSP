@@ -10,6 +10,7 @@ import krpc, math, time, sys
 
 conn = krpc.connect(name='Launch Science Station to Orbit')
 vessel = conn.space_center.active_vessel
+canvas = conn.ui.stock_canvas
 altitude = conn.add_stream(getattr, vessel.flight(), 'mean_altitude')
 
 def suicide_burn_calc(vessel,saf,g,thrust,vs):
@@ -36,6 +37,65 @@ def print_status(h, throttle, burn_height, burn_time, vs):
     sys.stdout.write("\r" + message)
     sys.stdout.flush()
 
+def update_display(h, throttle, burn_height, burn_time, vs, vv, thrust):
+    global display_Thurst
+    global display_Height
+    global display_SBH
+    global display_vs
+    global display_vv
+    global display_burntime
+    global display_throttle
+    display_Thurst.content      = ('Thrust   :  %.2f kN' % (thrust/1000))
+    display_Height.content      = ('Height   :  %.2f m' % h)
+    display_SBH.content         = ('SBH      :  %.2f m' % burn_height)
+    display_vs.content          = ('Velocity :  %.2f m/s' % vs)
+    display_vv.content          = ('V Velocity: %.2f m/s' % vv)
+    display_burntime.content    = ('Burn Time:  %.2f' % burn_time)
+    display_throttle.content    = ('Throttle :  %.2f' % throttle)
+
+""" Setup the UI panel """
+screen_size = canvas.rect_transform.size        # get the size of the game window
+panel = canvas.add_panel()                      # add a panel to contain UI elements
+rect = panel.rect_transform
+rect.size = (200, 400)
+rect.position = (110-(screen_size[0]/2),0)
+
+display_Thurst = panel.add_text('Thurst: 0 kN')
+display_Thurst.rect_transform.position = (0,100)
+display_Thurst.color = (1,1,1)
+display_Thurst.size = 18
+
+display_Height = panel.add_text('Height: 0 m')
+display_Height.rect_transform.position = (0,-40)
+display_Height.color = (1,1,1)
+display_Height.size = 18
+
+display_SBH = panel.add_text('Suicide Burn alt: 0 m')
+display_SBH.rect_transform.position = (0,-60)
+display_SBH.color = (1,1,1)
+display_SBH.size = 18
+
+display_vs = panel.add_text('Velocity: 0 m/s')
+display_vs.rect_transform.position = (0,-80)
+display_vs.color = (1,1,1)
+display_vs.size = 18
+
+display_vv = panel.add_text('V Velocity: 0 m/s')
+display_vv.rect_transform.position = (0,-100)
+display_vv.color = (1,1,1)
+display_vv.size = 18
+
+display_burntime = panel.add_text('Burn Time: 0 s')
+display_burntime.rect_transform.position = (0,-120)
+display_burntime.color = (1,1,1)
+display_burntime.size = 18
+
+display_throttle = panel.add_text('Throttle: 0')
+display_throttle.rect_transform.position = (0,-140)
+display_throttle.color = (1,1,1)
+display_throttle.size = 18
+
+
 """ Ship Setup """
 #throttle = vessel.control.throttle
 vessel.control.throttle = 0
@@ -55,7 +115,7 @@ time.sleep(1)
 vessel.control.sas = True
 
 """ Set Parameters for Landing """
-safety = 1.1
+safety = 1.0
 vLand = -8      # landing speed m/s
 runmode = 1     # ??
 thrust = vessel.max_thrust
@@ -86,7 +146,7 @@ while runmode:
     vDiff = vLand - vs
 
     """ Calculates values for landing """
-    SBH = suicide_burn_calc(vessel,safety,g,thrust,vs)     # Calculates the suicide burn Height
+    SBH = suicide_burn_height(vessel,safety,g,thrust,vs)     # Calculates the suicide burn Height
     time_to_burn = ((SBH - h)/vs)
     zeroAccelTrust = ((vessel.mass * g)/thrust)
 
@@ -149,6 +209,7 @@ while runmode:
             runmode = 0     # if landed for 2 seconde then exit
 
     print_status(h, vessel.control.throttle, SBH, time_to_burn, vs)
+    update_display(h, vessel.control.throttle, SBH, time_to_burn, vs, vv, thrust)
     time.sleep(0.05)
 
 """ Landing notification and program exit """
