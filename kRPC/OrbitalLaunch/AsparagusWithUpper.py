@@ -29,8 +29,8 @@ vessel.control.sas = False
 vessel.control.rcs = False
 vessel.control.throttle = 1
 
-def print_status():
-    message = ("altitude: %.2f apoapsis: %.2f " % (altitude(), apoapsis()))
+def print_status(stage):
+    message = ("altitude: %.2f apoapsis: %.2f stage: %i" % (altitude(), apoapsis(),stage))
     sys.stdout.write("\r" + message)
     sys.stdout.flush()
 
@@ -39,6 +39,8 @@ time.sleep(1)
 vessel, stage = vessel_info(conn)
 time.sleep(1)
 engines = get_engines(vessel)
+for part in engines:
+    print("Found Engines: ", part.name)
 
 # Countdown...
 print('3...'); time.sleep(1)
@@ -50,13 +52,14 @@ print('Launch!')
 vessel.control.activate_next_stage()
 vessel.auto_pilot.engage()
 vessel.auto_pilot.target_pitch_and_heading(90, 90)
+vessel, stage = vessel_info(conn)
 
 # Main ascent loop
 srbs_separated = False
 turn_angle = 0
 while True:
     time.sleep(.1)
-    print_status()
+    print_status(stage)
     #print("altitude: %.2f" % altitude())
     # Gravity turn
     if altitude() > turn_start_altitude and altitude() < turn_end_altitude:
@@ -90,13 +93,13 @@ vessel.control.activate_next_stage()
 time.sleep(.1)
 vessel.control.activate_next_stage()
 while altitude() < 70500:
-    print_status()
+    print_status(stage)
     time.sleep(.1)
     pass
 vessel.control.throttle = 1
 # Disable engines when target apoapsis is reached
 while apoapsis() < target_altitude:
-    print_status()
+    print_status(stage)
     time.sleep(.1)
     pass
 print('Target apoapsis reached')
@@ -138,7 +141,7 @@ conn.space_center.warp_to(burn_ut - lead_time)
 print('Ready to execute burn')
 time_to_apoapsis = conn.add_stream(getattr, vessel.orbit, 'time_to_apoapsis')
 while time_to_apoapsis() - (burn_time/2.) > 0:
-    print_status()
+    print_status(stage)
     time.sleep(.1)
     pass
 print('Executing burn')
@@ -148,7 +151,7 @@ print('Fine tuning')
 vessel.control.throttle = 0.25
 remaining_burn = conn.add_stream(node.remaining_burn_vector, node.reference_frame)
 while remaining_burn()[1] > 0:
-    print_status()
+    print_status(stage)
     time.sleep(.1)
     pass
 vessel.control.throttle = 0

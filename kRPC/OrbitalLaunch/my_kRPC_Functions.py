@@ -81,8 +81,9 @@ def vessel_info(conn):
 def decouple_if_empty(vessel, stage, engines, conn):
     decouple = False
     for part in engines:
+        #print(part.name)
         if part.engine.propellants[0].total_resource_available == 0 and part.stage == stage:
-            #print(part.title, '-',part.engine.propellant_names, ' Parent-Parent: ', part.parent.parent.name, part.engine.propellants[0].name, ' Available: ', part.engine.propellants[0].total_resource_available)
+            print(part.title, '-',part.engine.propellant_names, ' Parent-Parent: ', part.parent.parent.name, part.engine.propellants[0].name, ' Available: ', part.engine.propellants[0].total_resource_available)
             #print(part.parent.parent.name)
             #print(part.parent.parent.decoupler)
             while True:

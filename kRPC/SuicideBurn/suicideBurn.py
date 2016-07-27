@@ -20,7 +20,7 @@ def suicide_burn_calc(vessel,saf,g,thrust,vv):
     return safety * a
 
 def print_status(h, throttle, burn_height, burn_time, vv):
-    message = ("Height: %.2f SNH: %.1f Throttle: %.1f Burn Time: %.2f Vertical Velocity: %.2f" % (h,burn_height,throttle,burn_time,vv))
+    message = ("Height: %.2f SNH: %.1f Throttle: %.2f Burn Time: %.2f Vertical Velocity: %.2f" % (h,burn_height,throttle,burn_time,vv))
     sys.stdout.write("\r" + message)
     sys.stdout.flush()
 
@@ -28,16 +28,20 @@ def print_status(h, throttle, burn_height, burn_time, vv):
 #throttle = vessel.control.throttle
 vessel.control.throttle = 0
 time.sleep(1)
-vessel.control.sas = False
+
 vessel.control.rcs = False
 time.sleep(1)
 ap = vessel.auto_pilot
 ap.reference_frame = vessel.orbital_reference_frame
 ap.engage()
+ap.disengage()
 g = vessel.orbit.body.surface_gravity
 
+time.sleep(1)
+vessel.control.sas = True
+
 """ Set Parameters for Landing """
-safety = .95
+safety = .90
 vLand = -8      # landing speed m/s
 runmode = 1     # ??
 thrust = vessel.max_thrust
@@ -71,9 +75,12 @@ while runmode:
         if h < 50000:
             print()
             print(' Passing thru 50000m, setting autopilot to retrograde')
-            ap.reference_frame = vessel.surface_velocity_reference_frame
+            #ap.reference_frame = vessel.surface_velocity_reference_frame
             #brakes on
-            ap.target_direction = (0,-1,0)
+            #vessel.control.sas = True
+            vessel.control.sas_mode = vessel.control.sas_mode.retrograde
+            print('SAS Mode is now set to radial: ', ap.sas_mode)
+            #ap.target_direction = (0,-1,0)
             runmode = 2
 
     """ Suicide burn start """
@@ -84,6 +91,7 @@ while runmode:
             vessel.control.rcs = False
             print()
             print('Starting Suicide Brun!')
+            vessel.control.gear = True
             runmode = 3
 
     if runmode == 3:
@@ -94,17 +102,23 @@ while runmode:
             # gear on
             # brakes off
         if vv > -6:
-            ap.target_direction = (1,0,0)
             print()
             print('vv is now less then -6 ms, switching to final approach')
+            print('SAS Mode: ', ap.sas_mode)
+            #ap.disengage()
+            #vessel.control.sas = True
+            vessel.control.rcs = True
+            vessel.control.sas_mode = vessel.control.sas_mode.radial
+            print('SAS Mode is now set to radial: ', ap.sas_mode)
+            # ap.target_direction = (1,0,0)
             runmode = 4
 
     """ Suicide burn final approach """
     if runmode == 4:
         if vDiff > 0:
-            vessel.control.throttle = zeroAccelTrust + 0.1
+            vessel.control.throttle = zeroAccelTrust + 0.01
         elif vDiff < 0:
-            vessel.control.throttle = zeroAccelTrust - 0.1
+            vessel.control.throttle = zeroAccelTrust - 0.01
 
         if vv > -0.1 and h < 100:
             counter += 1
@@ -118,5 +132,7 @@ while runmode:
 """ Landing notification and program exit """
 if runmode == 0:
     vessel.control.throttle = 0
+    vessel.control.rcs = False
+    vessel.control.sas = False
     print()
     print("Landing Complete")
