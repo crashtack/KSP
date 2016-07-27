@@ -37,8 +37,8 @@ ap.engage()
 g = vessel.orbit.body.surface_gravity
 
 """ Set Parameters for Landing """
-safety = 1.0
-vLand = -4      # landing speed m/s
+safety = .95
+vLand = -8      # landing speed m/s
 runmode = 1     # ??
 thrust = vessel.max_thrust
 counter = 0     # for checking if landed
