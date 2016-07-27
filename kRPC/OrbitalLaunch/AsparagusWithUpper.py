@@ -1,5 +1,5 @@
 import krpc, time, math, sys
-from my_kRPC_Functions import vessel_info, get_engines, decouple_if_empty
+from my_kRPC_Functions import vessel_info, get_engines, decouple_if_empty, current_stage
 
 turn_start_altitude = 250
 turn_end_altitude = 45000
@@ -36,11 +36,12 @@ def print_status(stage):
 
 # get vessel info
 time.sleep(1)
-vessel, stage = vessel_info(conn)
+vessel = vessel_info(conn)
 time.sleep(1)
 engines = get_engines(vessel)
+stage = current_stage(engines)
 for part in engines:
-    print("Found Engines: ", part.name)
+    print("Found Engines: ", part.name , "Stage: ", part.stage)
 
 # Countdown...
 print('3...'); time.sleep(1)
@@ -52,7 +53,7 @@ print('Launch!')
 vessel.control.activate_next_stage()
 vessel.auto_pilot.engage()
 vessel.auto_pilot.target_pitch_and_heading(90, 90)
-vessel, stage = vessel_info(conn)
+vessel = vessel_info(conn)
 
 # Main ascent loop
 srbs_separated = False

@@ -55,8 +55,12 @@ def engines_fuel_status(vessel):
         print(' ', part.title, '-',part.engine.propellant_names, ' Parent-Parent: ', part.parent.parent.name, part.engine.propellants[0].name, ' Available: ', part.engine.propellants[0].total_resource_available)
     return engines
 
-def current_stage(vessel):
-    stage = vessel.control.current_stage
+def current_stage(engines):
+    #stage = vessel.control.current_stage
+    stage = 0
+    for engine in engines:
+        if engine.stage > stage:
+            stage = engine.stage
     return stage
 
 def get_engines(vessel):
@@ -75,15 +79,14 @@ def get_engines(vessel):
 
 def vessel_info(conn):
     vessel = conn.space_center.active_vessel
-    stage = current_stage(vessel)
-    return vessel, stage
+    return vessel
 
 def decouple_if_empty(vessel, stage, engines, conn):
     decouple = False
     for part in engines:
         #print(part.name)
         if part.engine.propellants[0].total_resource_available == 0 and part.stage == stage:
-            print(part.title, '-',part.engine.propellant_names, ' Parent-Parent: ', part.parent.parent.name, part.engine.propellants[0].name, ' Available: ', part.engine.propellants[0].total_resource_available)
+            print(' ', part.title, '-',part.engine.propellant_names, ' Parent-Parent: ', part.parent.parent.name, part.engine.propellants[0].name, ' Available: ', part.engine.propellants[0].total_resource_available)
             #print(part.parent.parent.name)
             #print(part.parent.parent.decoupler)
             while True:
@@ -99,6 +102,8 @@ def decouple_if_empty(vessel, stage, engines, conn):
             decouple = True
 
     if decouple:
-        vessel, stage = vessel_info(conn)
+        time.sleep(.5)
+        vessel = vessel_info(conn)
         engines = get_engines(vessel)
+        stage = current_stage(engines)
     return vessel, stage, engines
