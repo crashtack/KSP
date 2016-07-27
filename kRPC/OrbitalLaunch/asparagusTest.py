@@ -1,5 +1,5 @@
 import krpc, time, math, sys
-import my_kRPC_Functions
+from my_kRPC_Functions import vessel_info, get_engines, decouple_if_empty
 
 turn_start_altitude = 250
 turn_end_altitude = 45000
@@ -35,11 +35,12 @@ print("SRB Fuel: %.2f" % srb_fuel())
 print("Main Engine Fuel: %.2f" % launcher_fuel())
 print("Upper Stage Fuel: %.2f" % second_stage_fuel())
 
-current_stage = my_kRPC_Functions.current_stage(vessel)
+vessel, stage = vessel_info(conn)
+engines = get_engines(vessel)
 while True:
-    vessel = conn.space_center.active_vessel
-    current_stage = my_kRPC_Functions.current_stage(vessel)
+    #vessel = conn.space_center.active_vessel
+    #current_stage = my_kRPC_Functions.current_stage(vessel)
     time.sleep(1)
     print('waiting')
-    engines = my_kRPC_Functions.get_engines(vessel)
-    my_kRPC_Functions.decouple_if_empty(vessel,engines,current_stage)
+    #engines = my_kRPC_Functions.get_engines(vessel)
+    vessel, stage, engines = decouple_if_empty(vessel, stage, engines, conn)
