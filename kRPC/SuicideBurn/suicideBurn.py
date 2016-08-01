@@ -38,7 +38,7 @@ vessel.control.sas = True
 
 """ Set Parameters for Landing """
 safety = 1.0     # 1.1 for larger lander on Kerbal, 2 for small lander,
-vLand = -8      # landing speed m/s
+vLand = -8.0      # landing speed m/s
 runmode = 1     # ??
 
 counter = 0     # for checking if landed
@@ -74,7 +74,9 @@ while runmode:
     h = vessel.flight(vessel.orbit.body.reference_frame).surface_altitude
     velocity_tupple = vessel.velocity(vessel.orbit.body.reference_frame)
     vs = -surface_velocity(velocity_tupple)      # surface Velocity
-    vv = -velocity_tupple[2]
+    velocity_tupple_surfaceReference = vessel.velocity(vessel.surface_velocity_reference_frame)
+    #vv = -velocity_tupple[2]
+    vv = vessel.flight(vessel.orbit.body.reference_frame).vertical_speed
     vDiff = vLand - vv
 
     """ Calculates values for landing """
@@ -128,12 +130,12 @@ while runmode:
         current_acceleration = vessel.thrust/mass
         print("current accel: %.2f" % current_acceleration)
 
-        if h < SBH - 100:
+        if h < SBH + 100 :
 
             if current_acceleration > initial_acceleration:
-                vessel.control.throttle = vessel.control.throttle - .05
+                vessel.control.throttle = vessel.control.throttle - .1
             elif current_acceleration < initial_acceleration:
-                vessel.control.throttle = vessel.control.throttle + .05
+                vessel.control.throttle = vessel.control.throttle + .1
 
             if vs > -6:
                 print()
@@ -144,12 +146,16 @@ while runmode:
                 vessel.control.rcs = True
                 vessel.control.sas_mode = vessel.control.sas_mode.radial
                 print('SAS Mode is now set to radial: ', ap.sas_mode)
+                print('Switching to Runmode 4')
+                print('zeroAccelTrust = ', zeroAccelTrust)
+                vessel.control.throttle = zeroAccelTrust
+                time.sleep(.1)
                 # ap.target_direction = (1,0,0)
                 runmode = 4
         else:
-            if vessel.control.throttle > .90:
+            if vessel.control.throttle > .5:
                 print("SBH is greater then 50m from current Height, chopping throttle")
-                vessel.control.throttle = .90
+                vessel.control.throttle = .5
             else:
                 print("waiting for vessel to drop a bit")
                 if vs > -6:
@@ -161,6 +167,10 @@ while runmode:
                     vessel.control.rcs = True
                     vessel.control.sas_mode = vessel.control.sas_mode.radial
                     print('SAS Mode is now set to radial: ', ap.sas_mode)
+                    print('Switching to Runmode 4')
+                    print('zeroAccelTrust = ', zeroAccelTrust)
+                    vessel.control.throttle = zeroAccelTrust
+                    time.sleep(.1)
                     # ap.target_direction = (1,0,0)
                     runmode = 4
 
@@ -168,16 +178,18 @@ while runmode:
     if runmode == 4:
         print()
         print('vDiff: ', vDiff)
-        if vDiff > 0:
-            vessel.control.throttle = zeroAccelTrust + 0.1
-        elif vDiff < 0:
-            vessel.control.throttle = zeroAccelTrust - 0.1
+        if vv < vLand:
+            print('vv = ', vv)
+            vessel.control.throttle = vessel.control.throttle + 0.01
+        else:
+            print('VV ok to land, vv = ', vv)
+            vessel.control.throttle = vessel.control.throttle - 0.01
 
         if vv > -2.0 and h < 10:
             counter += 1
             time.sleep(.1)
-        if counter > 20:
-            runmode = 0     # if landed for 2 seconde then exit
+            if counter > 20:
+                runmode = 0     # if landed for 2 seconde then exit
 
     print_status(h, vessel.control.throttle, SBH, time_to_burn, vs)
     update_display(h, vessel.control.throttle, SBH, time_to_burn, \
