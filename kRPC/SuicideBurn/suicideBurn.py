@@ -7,12 +7,14 @@
 
 """
 import krpc, math, time, sys
+from my_kRPC_Functions import vessel_info, get_engines, decouple_if_empty
 
 conn = krpc.connect(name='Launch Science Station to Orbit')
 vessel = conn.space_center.active_vessel
 canvas = conn.ui.stock_canvas
 altitude = conn.add_stream(getattr, vessel.flight(), 'mean_altitude')
 
+""" Moving to suicideBurnFunctions.py
 def suicide_burn_calc(vessel,saf,g,thrust,vs):
     safety      = saf          # 1 corresponds to no safety margin, 1.1 had 10% safety margin
     mass    = vessel.mass
@@ -59,8 +61,8 @@ def update_display(h, throttle, burn_height, burn_time, vs, vv, thrust):
     display_burntime.content    = ('Burn Time:  %.2f' % burn_time)
     display_throttle.content    = ('Throttle :  %.2f' % throttle)
     display_Mass.content        = ('Mass : %.2f k' % mass)
-    display_initialAccel        = ('Initial Accel: %.2f' % initial_acceleration)
-    display_currentAccel        = ('Current Accel: %.2f' % current_acceleration)
+    display_initialAccel.content= ('Initial Accel: %.2f' % initial_acceleration)
+    display_currentAccel.content= ('Current Accel: %.2f' % current_acceleration)
 
 
 """ Setup the UI panel """
@@ -125,7 +127,7 @@ display_currentAccel = panel.add_text('Current Accel: 0')
 display_currentAccel.rect_transform.position = (0,-180)
 display_currentAccel.color = (1,1,1)
 display_currentAccel.size = fontsize
-
+"""
 
 """ Ship Setup """
 #throttle = vessel.control.throttle
@@ -146,7 +148,7 @@ time.sleep(1)
 vessel.control.sas = True
 
 """ Set Parameters for Landing """
-safety = 1
+safety = 1.0     # 1.1 for larger lander on Kerbal, 2 for small lander,
 vLand = -8      # landing speed m/s
 runmode = 1     # ??
 
@@ -157,6 +159,7 @@ mass    = vessel.mass
 print('Mass = ', mass)
 thrust = vessel.max_thrust
 initial_acceleration = thrust/mass
+print('Theoredical Acceleration: ', initial_acceleration)
 current_acceleration = vessel.thrust/mass
 print('Max Thrust = ', thrust)
 
@@ -165,7 +168,7 @@ velocity_tupple = vessel.velocity(vessel.orbit.body.reference_frame)
 vs = surface_velocity(velocity_tupple)      # surface Velocity
 vv = -velocity_tupple[2]                    #vertical velocity
 vDiff = vLand - vs
-
+zeroAccelTrust = ((mass * g)/thrust)
 
 SBH = suicide_burn_height(vessel,safety,g,thrust,vs)
 print('SBH = ', SBH)
@@ -173,6 +176,7 @@ a = (thrust/mass) - g
 t = vs / a
 dV = t * thrust / 1000
 print('Delta V: ', dV)
+print()
 
 """ Loop until landed """
 while runmode:
@@ -186,8 +190,6 @@ while runmode:
     """ Calculates values for landing """
     SBH = suicide_burn_height(vessel,safety,g,thrust,vs)     # Calculates the suicide burn Height
     time_to_burn = ((SBH - h)/vs)
-    zeroAccelTrust = ((mass * g)/thrust)
-
 
     """ Initial setup for high altitude """
     if runmode == 1:
@@ -201,6 +203,19 @@ while runmode:
             vessel.control.sas_mode = vessel.control.sas_mode.retrograde
             print('SAS Mode is now set to radial: ', ap.sas_mode)
             #ap.target_direction = (0,-1,0)
+            runmode = 5
+
+    """ performing a short pre-burn at SBH + 20% to determine initial acceleration"""
+    if runmode == 5:
+        if h < (SBH + (SBH * .5)):
+            print()
+            print("performing Pre-Burn")
+            vessel.control.throttle = 1
+            time.sleep(1.2)
+            initial_acceleration = vessel.thrust/mass
+            zeroAccelTrust = ((mass * g)/vessel.thrust)
+            print("initial acceleration: ", initial_acceleration)
+            vessel.control.throttle = 0
             runmode = 2
 
     """ Suicide burn start """
@@ -212,9 +227,9 @@ while runmode:
             print()
             print('Starting Suicide Brun!')
             vessel.control.gear = True
-            initial_acceleration = thrust/mass
-            print("initial acceleration: ", initial_acceleration)
-            time.sleep(1.1)
+            #initial_acceleration = thrust/mass
+            #print("initial acceleration: ", initial_acceleration)
+            time.sleep(1)
             runmode = 3
 
     """ During Suicide Burn """
@@ -242,10 +257,12 @@ while runmode:
 
     """ Suicide burn final approach """
     if runmode == 4:
+        print()
+        print('vDiff: ', vDiff)
         if vDiff > 0:
-            vessel.control.throttle = zeroAccelTrust + 0.01
+            vessel.control.throttle = zeroAccelTrust + 0.1
         elif vDiff < 0:
-            vessel.control.throttle = zeroAccelTrust - 0.01
+            vessel.control.throttle = zeroAccelTrust - 0.1
 
         if vv > -0.1 and h < 100:
             counter += 1
