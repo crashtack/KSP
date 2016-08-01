@@ -1,3 +1,5 @@
+import krpc, math, time, sys
+
 def suicide_burn_calc(vessel,saf,g,thrust,vs):
     safety      = saf          # 1 corresponds to no safety margin, 1.1 had 10% safety margin
     mass    = vessel.mass
@@ -22,20 +24,19 @@ def print_status(h, throttle, burn_height, burn_time, vs):
     sys.stdout.write("\r" + message)
     sys.stdout.flush()
 
-def update_display(h, throttle, burn_height, burn_time, vs, vv, thrust):
-    global display_Thurst
-    global display_Height
-    global display_SBH
-    global display_vs
-    global display_vv
-    global display_burntime
-    global display_throttle
-    global display_Mass
-    global mass
-    global display_currentAccel
-    global display_initialAccel
-    global current_acceleration
-    global initial_acceleration
+def update_display(h, throttle, burn_height, burn_time, vs, vv, thrust, mass, Ai, Ac):
+    # global display_Thurst
+    # global display_Height
+    # global display_SBH
+    # global display_vs
+    # global display_vv
+    # global display_burntime
+    # global display_throttle
+    # global display_Mass
+    # global display_currentAccel
+    # global display_initialAccel
+    # global current_acceleration
+    # global initial_acceleration
     display_Thurst.content      = ('Thrust   :  %.2f kN' % (thrust/1000))
     display_Height.content      = ('Height   :  %.2f m' % h)
     display_SBH.content         = ('SBH      :  %.2f m' % burn_height)
@@ -44,11 +45,20 @@ def update_display(h, throttle, burn_height, burn_time, vs, vv, thrust):
     display_burntime.content    = ('Burn Time:  %.2f' % burn_time)
     display_throttle.content    = ('Throttle :  %.2f' % throttle)
     display_Mass.content        = ('Mass : %.2f k' % mass)
-    display_initialAccel.content= ('Initial Accel: %.2f' % initial_acceleration)
-    display_currentAccel.content= ('Current Accel: %.2f' % current_acceleration)
+    display_initialAccel.content= ('Initial Accel: %.2f' % Ai)
+    display_currentAccel.content= ('Current Accel: %.2f' % Ac)
 
-def setup_ui():
-
+def setup_ui(vessel, canvas):
+    global display_Thurst
+    global display_Height
+    global display_SBH
+    global display_vs
+    global display_vv
+    global display_burntime
+    global display_throttle
+    global display_Mass
+    global display_currentAccel
+    global display_initialAccel
     """ Setup the UI panel """
     screen_size = canvas.rect_transform.size        # get the size of the game window
     panel = canvas.add_panel()                      # add a panel to contain UI elements
@@ -57,58 +67,57 @@ def setup_ui():
     rect.position = (110-(screen_size[0]/2),0)
     fontsize = 14
 
-
-    global display_startMass   = panel.add_text('Starting Mass: %.2f k' % vessel.mass)
+    display_startMass   = panel.add_text('Starting Mass: %.2f k' % vessel.mass)
     display_startMass.rect_transform.position = (-10,80)
     display_startMass.color = (1,1,1)
     display_startMass.size = fontsize
 
-    global display_Mass        = panel.add_text('Mass         : 0 k')
+    display_Mass        = panel.add_text('Mass         : 0 k')
     display_Mass.rect_transform.position = (-10,60)
     display_Mass.color = (1,1,1)
     display_Mass.size = fontsize
 
-    global display_Thurst = panel.add_text('Thurst: 0 kN')
+    display_Thurst = panel.add_text('Thurst: 0 kN')
     display_Thurst.rect_transform.position = (0,100)
     display_Thurst.color = (1,1,1)
     display_Thurst.size = fontsize
 
-    global display_Height = panel.add_text('Height: 0 m')
+    display_Height = panel.add_text('Height: 0 m')
     display_Height.rect_transform.position = (0,-40)
     display_Height.color = (1,1,1)
     display_Height.size = fontsize
 
-    global display_SBH = panel.add_text('Suicide Burn alt: 0 m')
+    display_SBH = panel.add_text('Suicide Burn alt: 0 m')
     display_SBH.rect_transform.position = (0,-60)
     display_SBH.color = (1,1,1)
     display_SBH.size = fontsize
 
-    global display_vs = panel.add_text('Velocity: 0 m/s')
+    display_vs = panel.add_text('Velocity: 0 m/s')
     display_vs.rect_transform.position = (0,-80)
     display_vs.color = (1,1,1)
     display_vs.size = fontsize
 
-    global display_vv = panel.add_text('V Velocity: 0 m/s')
+    display_vv = panel.add_text('V Velocity: 0 m/s')
     display_vv.rect_transform.position = (0,-100)
     display_vv.color = (1,1,1)
     display_vv.size = fontsize
 
-    global display_burntime = panel.add_text('Burn Time: 0 s')
+    display_burntime = panel.add_text('Burn Time: 0 s')
     display_burntime.rect_transform.position = (0,-120)
     display_burntime.color = (1,1,1)
     display_burntime.size = fontsize
 
-    global display_throttle = panel.add_text('Throttle: 0')
+    display_throttle = panel.add_text('Throttle: 0')
     display_throttle.rect_transform.position = (0,-140)
     display_throttle.color = (1,1,1)
     display_throttle.size = fontsize
 
-    global display_initialAccel = panel.add_text('Initial Accel: 0')
+    display_initialAccel = panel.add_text('Initial Accel: 0')
     display_initialAccel.rect_transform.position = (0,-160)
     display_initialAccel.color = (1,1,1)
     display_initialAccel.size = fontsize
 
-    global display_currentAccel = panel.add_text('Current Accel: 0')
+    display_currentAccel = panel.add_text('Current Accel: 0')
     display_currentAccel.rect_transform.position = (0,-180)
     display_currentAccel.color = (1,1,1)
     display_currentAccel.size = fontsize

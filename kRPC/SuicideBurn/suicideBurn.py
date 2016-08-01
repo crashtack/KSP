@@ -7,7 +7,8 @@
 
 """
 import krpc, math, time, sys
-from my_kRPC_Functions import vessel_info, get_engines, decouple_if_empty
+from suicideBurnFunctions import suicide_burn_calc, suicide_burn_height, \
+print_status, update_display, setup_ui, surface_velocity
 
 conn = krpc.connect(name='Launch Science Station to Orbit')
 vessel = conn.space_center.active_vessel
@@ -65,7 +66,7 @@ def update_display(h, throttle, burn_height, burn_time, vs, vv, thrust):
     display_currentAccel.content= ('Current Accel: %.2f' % current_acceleration)
 
 
-""" Setup the UI panel """
+
 screen_size = canvas.rect_transform.size        # get the size of the game window
 panel = canvas.add_panel()                      # add a panel to contain UI elements
 rect = panel.rect_transform
@@ -129,6 +130,8 @@ display_currentAccel.color = (1,1,1)
 display_currentAccel.size = fontsize
 """
 
+setup_ui(vessel, canvas)
+
 """ Ship Setup """
 #throttle = vessel.control.throttle
 vessel.control.throttle = 0
@@ -155,6 +158,7 @@ runmode = 1     # ??
 counter = 0     # for checking if landed
 
 """ Find ship parameters """
+global mass
 mass    = vessel.mass
 print('Mass = ', mass)
 thrust = vessel.max_thrust
@@ -271,7 +275,8 @@ while runmode:
             runmode = 0     # if landed for 2 seconde then exit
 
     print_status(h, vessel.control.throttle, SBH, time_to_burn, vs)
-    update_display(h, vessel.control.throttle, SBH, time_to_burn, vs, vv, thrust)
+    update_display(h, vessel.control.throttle, SBH, time_to_burn, \
+        vs, vv, thrust, mass, initial_acceleration, current_acceleration)
     time.sleep(0.05)
 
 """ Landing notification and program exit """
