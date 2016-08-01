@@ -127,23 +127,42 @@ while runmode:
         print()
         current_acceleration = vessel.thrust/mass
         print("current accel: %.2f" % current_acceleration)
-        if current_acceleration > initial_acceleration:
-            print("current accel: %.2f" % current_acceleration)
-            vessel.control.throttle = vessel.control.throttle - .02
-        elif current_acceleration < initial_acceleration:
-            vessel.control.throttle = vessel.control.throttle + .02
 
-        if vs > -6:
-            print()
-            print('vs is now less then -6 ms, switching to final approach')
-            print('SAS Mode: ', ap.sas_mode)
-            #ap.disengage()
-            #vessel.control.sas = True
-            vessel.control.rcs = True
-            vessel.control.sas_mode = vessel.control.sas_mode.radial
-            print('SAS Mode is now set to radial: ', ap.sas_mode)
-            # ap.target_direction = (1,0,0)
-            runmode = 4
+        if h < SBH - 100:
+
+            if current_acceleration > initial_acceleration:
+                vessel.control.throttle = vessel.control.throttle - .05
+            elif current_acceleration < initial_acceleration:
+                vessel.control.throttle = vessel.control.throttle + .05
+
+            if vs > -6:
+                print()
+                print('vs is now less then -6 ms, switching to final approach')
+                print('SAS Mode: ', ap.sas_mode)
+                #ap.disengage()
+                #vessel.control.sas = True
+                vessel.control.rcs = True
+                vessel.control.sas_mode = vessel.control.sas_mode.radial
+                print('SAS Mode is now set to radial: ', ap.sas_mode)
+                # ap.target_direction = (1,0,0)
+                runmode = 4
+        else:
+            if vessel.control.throttle > .90:
+                print("SBH is greater then 50m from current Height, chopping throttle")
+                vessel.control.throttle = .90
+            else:
+                print("waiting for vessel to drop a bit")
+                if vs > -6:
+                    print()
+                    print('vs is now less then -6 ms, switching to final approach')
+                    print('SAS Mode: ', ap.sas_mode)
+                    #ap.disengage()
+                    #vessel.control.sas = True
+                    vessel.control.rcs = True
+                    vessel.control.sas_mode = vessel.control.sas_mode.radial
+                    print('SAS Mode is now set to radial: ', ap.sas_mode)
+                    # ap.target_direction = (1,0,0)
+                    runmode = 4
 
     """ Suicide burn final approach """
     if runmode == 4:
@@ -154,7 +173,7 @@ while runmode:
         elif vDiff < 0:
             vessel.control.throttle = zeroAccelTrust - 0.1
 
-        if vv > -0.1 and h < 100:
+        if vv > -2.0 and h < 10:
             counter += 1
             time.sleep(.1)
         if counter > 20:
