@@ -72,10 +72,10 @@ print()
 while runmode:
     mass = vessel.mass
     h = vessel.flight(vessel.orbit.body.reference_frame).surface_altitude
-    velocity_tupple = vessel.velocity(vessel.orbit.body.reference_frame)
+    #velocity_tupple = vessel.velocity(vessel.orbit.body.reference_frame)
+    velocity_tupple = vessel.flight(vessel.orbit.body.reference_frame).velocity
     vs = -surface_velocity(velocity_tupple)      # surface Velocity
-    velocity_tupple_surfaceReference = vessel.velocity(vessel.surface_velocity_reference_frame)
-    #vv = -velocity_tupple[2]
+
     vv = vessel.flight(vessel.orbit.body.reference_frame).vertical_speed
     vDiff = vLand - vv
 
@@ -178,12 +178,20 @@ while runmode:
     if runmode == 4:
         print()
         print('vDiff: ', vDiff)
-        if vv < vLand:
-            print('vv = ', vv)
-            vessel.control.throttle = vessel.control.throttle + 0.01
+        if h > 30:
+            if vv < -8:
+                print('vv = ', vv)
+                vessel.control.throttle = vessel.control.throttle + 0.02
+            else:
+                print('VV ok to land, vv = ', vv)
+                vessel.control.throttle = vessel.control.throttle - 0.02
         else:
-            print('VV ok to land, vv = ', vv)
-            vessel.control.throttle = vessel.control.throttle - 0.01
+            if vv < -3:
+                print('vv = ', vv)
+                vessel.control.throttle = vessel.control.throttle + 0.01
+            else:
+                print('VV ok to land, vv = ', vv)
+                vessel.control.throttle = vessel.control.throttle - 0.05
 
         if vv > -2.0 and h < 10:
             counter += 1
