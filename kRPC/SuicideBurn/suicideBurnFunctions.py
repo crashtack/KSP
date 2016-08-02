@@ -9,7 +9,7 @@ def suicide_burn_calc(vessel,saf,g,thrust,vs):
 
 def suicide_burn_height(vessel,saf,g,thrust,vs):
     mass = vessel.mass
-    a = (thrust/mass) + g
+    a = (thrust/mass) - g
     t = vs / a
     h = (0.5*(vs**2))/a
     return h * saf
@@ -25,18 +25,6 @@ def print_status(h, throttle, burn_height, burn_time, vs):
     sys.stdout.flush()
 
 def update_display(h, throttle, burn_height, burn_time, vs, vv, thrust, mass, Ai, Ac):
-    # global display_Thurst
-    # global display_Height
-    # global display_SBH
-    # global display_vs
-    # global display_vv
-    # global display_burntime
-    # global display_throttle
-    # global display_Mass
-    # global display_currentAccel
-    # global display_initialAccel
-    # global current_acceleration
-    # global initial_acceleration
     display_Thurst.content      = ('Thrust   :  %.2f kN' % (thrust/1000))
     display_Height.content      = ('Height   :  %.2f m' % h)
     display_SBH.content         = ('SBH      :  %.2f m' % burn_height)

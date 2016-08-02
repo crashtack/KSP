@@ -37,11 +37,11 @@ time.sleep(1)
 vessel.control.sas = True
 
 """ Set Parameters for Landing """
-safety = 1.0     # 1.1 for larger lander on Kerbal, 2 for small lander,
-vLand = -8.0      # landing speed m/s
-runmode = 1     # ??
+safety = 1.1       # 1.1 for larger lander on Kerbal, 2 for small lander,
+vLand = -8.0        # landing speed m/s
+runmode = 1         # ??
 
-counter = 0     # for checking if landed
+counter = 0         # for checking if landed
 
 """ Find ship parameters """
 global mass
@@ -49,7 +49,10 @@ mass    = vessel.mass
 print('Mass = ', mass)
 thrust = vessel.max_thrust
 initial_acceleration = thrust/mass
-print('Theoredical Acceleration: ', initial_acceleration)
+print('Theoredical Maxx Acceleration: ', initial_acceleration)
+vacuum_acceleration = vessel.max_vacuum_thrust/mass
+print('Theoredical Max Vac Acceleration: ', vacuum_acceleration)
+
 current_acceleration = vessel.thrust/mass
 print('Max Thrust = ', thrust)
 
@@ -75,7 +78,6 @@ while runmode:
     #velocity_tupple = vessel.velocity(vessel.orbit.body.reference_frame)
     velocity_tupple = vessel.flight(vessel.orbit.body.reference_frame).velocity
     vs = -surface_velocity(velocity_tupple)      # surface Velocity
-
     vv = vessel.flight(vessel.orbit.body.reference_frame).vertical_speed
     vDiff = vLand - vv
 
@@ -86,33 +88,47 @@ while runmode:
     """ Initial setup for high altitude """
     if runmode == 1:
         vessel.control.throttle = 0
+        if h > SBH * 2:
+            conn.space_center.physics_warp_factor = 4
         if h < 50000:
             print()
             print(' Passing thru 50000m, setting autopilot to retrograde')
-            #ap.reference_frame = vessel.surface_velocity_reference_frame
-            #brakes on
-            #vessel.control.sas = True
             vessel.control.sas_mode = vessel.control.sas_mode.retrograde
             print('SAS Mode is now set to radial: ', ap.sas_mode)
-            #ap.target_direction = (0,-1,0)
-            runmode = 5
+            runmode = 6
 
     """ performing a short pre-burn at SBH + 20% to determine initial acceleration"""
     if runmode == 5:
-        if h < (SBH + (SBH * .5)):
+        if h < SBH * 2:
+            conn.space_center.physics_warp_factor = 0
+        if h < (SBH + (SBH * 1)):
             print()
             print("performing Pre-Burn")
             vessel.control.throttle = 1
-            time.sleep(1.2)
+            time.sleep(.5)
             initial_acceleration = vessel.thrust/mass
             zeroAccelTrust = ((mass * g)/vessel.thrust)
             print("initial acceleration: ", initial_acceleration)
             vessel.control.throttle = 0
             runmode = 2
 
+    """determine new initial acceleration"""
+    if runmode == 6:
+        if h < SBH * 2:
+            conn.space_center.physics_warp_factor = 0
+        if h < (SBH + (SBH * .1)):
+            print()
+            print("Calculating Acceleration")
+            initial_acceleration = vessel.max_thrust/mass
+            zeroAccelTrust = ((mass * g)/vessel.max_thrust)
+            print("Avalable acceleration: ", initial_acceleration)
+            runmode = 2
+
     """ Suicide burn start """
     if runmode == 2:
         #if h < (SBH - vs):
+        if h < SBH * 2:
+            conn.space_center.physics_warp_factor = 0
         if h < SBH:
             vessel.control.throttle = 1
             vessel.control.rcs = False
@@ -130,12 +146,12 @@ while runmode:
         current_acceleration = vessel.thrust/mass
         print("current accel: %.2f" % current_acceleration)
 
-        if h < SBH + 100 :
+        if h < SBH + 150 :
 
             if current_acceleration > initial_acceleration:
-                vessel.control.throttle = vessel.control.throttle - .1
+                vessel.control.throttle = vessel.control.throttle - .2
             elif current_acceleration < initial_acceleration:
-                vessel.control.throttle = vessel.control.throttle + .1
+                vessel.control.throttle = vessel.control.throttle + .05
 
             if vs > -6:
                 print()
@@ -153,9 +169,9 @@ while runmode:
                 # ap.target_direction = (1,0,0)
                 runmode = 4
         else:
-            if vessel.control.throttle > .5:
+            if vessel.control.throttle > 0:
                 print("SBH is greater then 50m from current Height, chopping throttle")
-                vessel.control.throttle = .5
+                vessel.control.throttle = 0
             else:
                 print("waiting for vessel to drop a bit")
                 if vs > -6:
@@ -177,20 +193,20 @@ while runmode:
     """ Suicide burn final approach """
     if runmode == 4:
         print()
-        print('vDiff: ', vDiff)
+        #print('vDiff: ', vDiff)
         if h > 30:
             if vv < -8:
-                print('vv = ', vv)
+                #print('vv = ', vv)
                 vessel.control.throttle = vessel.control.throttle + 0.02
             else:
-                print('VV ok to land, vv = ', vv)
+                #print('VV ok to land, vv = ', vv)
                 vessel.control.throttle = vessel.control.throttle - 0.02
         else:
             if vv < -3:
-                print('vv = ', vv)
+                #print('vv = ', vv)
                 vessel.control.throttle = vessel.control.throttle + 0.01
             else:
-                print('VV ok to land, vv = ', vv)
+                #print('VV ok to land, vv = ', vv)
                 vessel.control.throttle = vessel.control.throttle - 0.05
 
         if vv > -2.0 and h < 10:
@@ -202,7 +218,7 @@ while runmode:
     print_status(h, vessel.control.throttle, SBH, time_to_burn, vs)
     update_display(h, vessel.control.throttle, SBH, time_to_burn, \
         vs, vv, thrust, mass, initial_acceleration, current_acceleration)
-    time.sleep(0.05)
+    time.sleep(0.025)
 
 """ Landing notification and program exit """
 if runmode == 0:
