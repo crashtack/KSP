@@ -23,7 +23,7 @@ setup_ui(vessel, canvas)
 vessel.control.throttle = 0
 time.sleep(1)
 
-vessel.control.rcs = False
+vessel.control.rcs = True
 time.sleep(1)
 ap = vessel.auto_pilot
 ap.reference_frame = vessel.orbital_reference_frame
@@ -39,7 +39,7 @@ vessel.control.sas = True
 """ Set Parameters for Landing """
 safety = 1.0       # 1.1 for larger lander on Kerbal, 2 for small lander,
 vLand = -8.0        # landing speed m/s
-runmode = 1         # ??
+runmode = 1         # set the initial runmode
 
 counter = 0         # for checking if landed
 
@@ -90,12 +90,18 @@ while runmode:
     if runmode == 1:
         vessel.control.throttle = 0
         if h > SBH * 2:
-            conn.space_center.physics_warp_factor = 4
+            conn.space_center.physics_warp_factor = 2
         if h < 50000:
             print()
             print(' Passing thru 50000m, setting autopilot to retrograde')
             vessel.control.sas_mode = vessel.control.sas_mode.retrograde
             print('SAS Mode is now set to radial: ', ap.sas_mode)
+            runmode = 7
+
+    if runmode == 7:
+        if h < 4000:
+            conn.space_center.physics_warp_factor = 0
+            print('Dropping like a rock!')
             runmode = 6
 
     """ performing a short pre-burn at SBH + 20\%
@@ -148,7 +154,7 @@ while runmode:
         current_acceleration = vessel.thrust / mass
         print("current accel: %.2f" % current_acceleration)
 
-        if h < SBH + 150:
+        if h < SBH + 110:
 
             if current_acceleration > initial_acceleration:
                 vessel.control.throttle = vessel.control.throttle - .2
@@ -201,19 +207,19 @@ while runmode:
         if h > 30:
             if vv < -8:
                 # print('vv = ', vv)
-                vessel.control.throttle = vessel.control.throttle + 0.02
+                vessel.control.throttle = vessel.control.throttle + 0.05
             else:
                 # print('VV ok to land, vv = ', vv)
-                vessel.control.throttle = vessel.control.throttle - 0.02
+                vessel.control.throttle = vessel.control.throttle - 0.07
         else:
             if vv < -3:
                 # print('vv = ', vv)
-                vessel.control.throttle = vessel.control.throttle + 0.01
+                vessel.control.throttle = vessel.control.throttle + 0.02
             else:
                 # print('VV ok to land, vv = ', vv)
                 vessel.control.throttle = vessel.control.throttle - 0.05
 
-        if vv > -2.0 and h < 10:
+        if vv > -2.0 and h < 15:
             counter += 1
             time.sleep(.1)
             if counter > 20:
